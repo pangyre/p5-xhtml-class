@@ -14,35 +14,13 @@ print xu($path_class)
     ->strip_tags("a")
     ->as_string;
 
-
 [% xu( article.bodyDoc ).enpara.as_string %]
 
 [% article.bodyDoc | enpara  %]
 
 [% article.enpara.to_string %]
 
-Global setup:
+WHAT IS THE RIGHT THING TO DO HERE?
 
-  Download and install Git
-  git config --global user.name "Ashley Pond V"
-  git config --global user.email ashley.pond.v@gmail.com
-        
-
-Next steps:
-
-  mkdir p5-xhtml-util
-  cd p5-xhtml-util
-  git init
-  touch README
-  git add README
-  git commit -m 'first commit'
-  git remote add origin git@github.com:pangyre/p5-xhtml-util.git
-  git push origin master
-      
-
-Existing Git Repo?
-
-  cd existing_git_repo
-  git remote add origin git@github.com:pangyre/p5-xhtml-util.git
-  git push origin master
-
+  print xu("OH HAI");
+  print xu("OH HAI")->to_string;

@@ -110,6 +110,19 @@ sub debug {
     $self->{_debug} || 0;
 }
 
+sub as_xhtml {
+    +shift->doc->serialize;
+}
+
+sub as_fragment {
+    my $self = shift;
+    my ( $fragment ) = $self->doc->findnodes($FRAGMENT_XPATH);
+    $fragment ||= $self->body;
+    my $out = "";
+    $out .= $_->serialize(1,"UTF-8") for $fragment->childNodes; # 321 encoding
+    return _trim($out);
+}
+
 sub as_string {
     my $self = shift;
     my @args = @_ ? @_ : ( 1, "UTF-8" );
@@ -166,7 +179,7 @@ sub _parse {
 
         $self->{_doc} = $self->parser
             ->parse_html_string(join("\n",
-                                     "<html><head><title></title></head><body>",
+                                     "<html><head><title>Untitled $TITLE_ATTR Document</title></head><body>",
                                      sprintf('<div title="%s">',
                                              $TITLE_ATTR
                                      ),
@@ -302,15 +315,6 @@ sub body {
 
 sub head {
     [ shift->doc->findnodes("//head") ]->[0];
-}
-
-sub as_fragment {
-    my $self = shift;
-    my ( $fragment ) = $self->doc->findnodes($FRAGMENT_XPATH);
-    $fragment ||= $self->body;
-    my $out = "";
-    $out .= $_->serialize(1,"UTF-8") for $fragment->childNodes;
-    return $out;
 }
 
 sub _make_selector {
@@ -955,3 +959,11 @@ NOTES, leftovers.
 #my $isList = \%HTML::Tagset::isList;
 #my $isTableElement = \%HTML::Tagset::isTableElement;
 #my $p_closure_barriers = \@HTML::Tagset::p_closure_barriers;
+
+
+has original
+has debug 
+has encoding?
+
+Sanitize only if a validation fails
+
