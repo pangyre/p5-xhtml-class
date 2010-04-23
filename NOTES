@@ -1,0 +1,48 @@
+Is XHTML::Class going too far? And assuming too much responsibility?
+
+Let's let the spell checker answer that: "RESPONSIBILITY is correct"
+
+xu() should be a shortcut and it is the only magic part like the HTML
+parser family. Otherwise we want parse_string, parse_fh, etc.
+
+All methods except as_string should return the object.
+
+    autobox the strings in the scope? No... too slow for this I think. How about blessing the string into XHTML::Util
+
+print xu($path_class)
+    ->enpara
+    ->strip_tags("a")
+    ->as_string;
+
+
+[% xu( article.bodyDoc ).enpara.as_string %]
+
+[% article.bodyDoc | enpara  %]
+
+[% article.enpara.to_string %]
+
+Global setup:
+
+  Download and install Git
+  git config --global user.name "Ashley Pond V"
+  git config --global user.email ashley.pond.v@gmail.com
+        
+
+Next steps:
+
+  mkdir p5-xhtml-util
+  cd p5-xhtml-util
+  git init
+  touch README
+  git add README
+  git commit -m 'first commit'
+  git remote add origin git@github.com:pangyre/p5-xhtml-util.git
+  git push origin master
+      
+
+Existing Git Repo?
+
+  cd existing_git_repo
+  git remote add origin git@github.com:pangyre/p5-xhtml-util.git
+  git push origin master
+
