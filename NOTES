@@ -18,9 +18,16 @@ print xu($path_class)
 
 [% article.bodyDoc | enpara  %]
 
-[% article.enpara.to_string %]
+[% article.enpara.as_string %]
 
 WHAT IS THE RIGHT THING TO DO HERE?
 
   print xu("OH HAI");
   print xu("OH HAI")->to_string;
+
+LINE BETWEEN as_string etc when originally a document or whatever is
+PRETTY BLURRY!!! It shouldn't be.
+
+as_text
+as_xhtml
+as_string (relative to whatever it started as?)
