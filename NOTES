@@ -32,8 +32,6 @@ as_text
 as_xhtml
 as_string (relative to whatever it started as?)
 
-flow
-  well-formed? leave it alone!
 
 stream parsing? NO
 

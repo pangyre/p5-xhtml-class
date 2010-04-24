@@ -1,12 +1,20 @@
 package XHTML::Class;
 use Moose;
-no warnings "uninitialized";
 use namespace::clean;
 use Moose::Exporter;
 Moose::Exporter->setup_import_methods( as_is => [ 'xc' ] );
 use XHTML::Class::Types;
-
 use overload q{""} => sub { +shift->as_string }, fallback => 1;
+no warnings "uninitialized";
+
+our $VERSION = "0.90_01";
+our $AUTHORITY = 'cpan:ASHLEY';
+
+use XML::LibXML;
+use HTML::Selector::XPath qw(selector_to_xpath);
+our $TITLE_ATTR = join("/", __PACKAGE__, $VERSION);
+our $FRAGMENT_SELECTOR = "div[title='$TITLE_ATTR']";
+our $FRAGMENT_XPATH = selector_to_xpath($FRAGMENT_SELECTOR);
 
 sub xc { __PACKAGE__->new(@_) }
 
@@ -27,8 +35,13 @@ sub BUILD {
     $self->meta->has_method($_) or confess "No such attribute: $_" for ( keys %$arg );
     # Convert source to doc.
     $self->_source_string( $arg->{source} );
-#321    $self->doc( 
+    $self->_doc($self->_make_sane_doc);
 }
+
+has "source" =>
+    is => "ro",
+    required => 1,
+    ;
 
 has "source" =>
     is => "ro",
@@ -42,19 +55,37 @@ has "source_string" =>
     coerce => 1,
     ;
 
+has "type" =>
+    is => "ro",
+    isa => "DWIMtype",
+    writer => "_type",
+#    lazy => 1,
+#    default => "fragment"
+    ;
+
 has "doc" =>
     is => "ro",
     isa => "XML::LibXML::Document",
     writer => "_doc",
+    lazy => 1,
+    builder => "_make_sane_doc",
     handles => {
                 findnodes => "findnodes",
                 firstChild => "firstChild",
                 root => "getDocumentElement",
+                as_xhtml => "serialize",
+                # as_text => "textContent",
                }
     ;
 
 my @LIBXML_ARG = qw( recover recover_silently );
 has \@LIBXML_ARG =>
+    is => "ro",
+    isa => "Bool",
+    lazy_build => 1,
+    ;
+
+has "keep_blanks" =>
     is => "ro",
     isa => "Bool",
     lazy_build => 1,
@@ -73,586 +104,69 @@ has "libxml" =>
             my $predicate = "has_$arg";
             $p->$arg($self->$arg) if $self->$predicate;
         }
-    }
+        # We want it off but defer to caller.
+        $self->has_keep_blanks ?
+            $p->keep_blanks($self->has_keep_blanks) : $p->keep_blanks(0);
+        $p;
+    },
+    handles => [qw( parse_html_string )],
     ;
 
-sub as_string { ... }
-
-sub as_text { ... }
-
-sub as_xhtml { ... }
-
-
-1;
-
-__END__
-
-use HTML::Tagset 3.02 ();
-use HTML::Entities qw( encode_entities decode_entities );
-use HTML::Selector::XPath ();
-use Path::Class;
-use Encode;
-use Scalar::Util qw( blessed );
-use HTML::TokeParser::Simple;
-use XML::Normalize::LibXML qw( xml_normalize );
-use overload q{""} => sub { +shift->as_string }, fallback => 1;
-
-our $VERSION = "0.90";
-our $AUTHORITY = 'cpan:ASHLEY';
-our $TITLE_ATTR = join("/", __PACKAGE__, $VERSION);
-
-our $FRAGMENT_SELECTOR = "div[title='$TITLE_ATTR']";
-our $FRAGMENT_XPATH = HTML::Selector::XPath::selector_to_xpath($FRAGMENT_SELECTOR);
-
-my $isKnown = { %HTML::Tagset::isKnown }; # We modify this one.
-my $emptyElement = \%HTML::Tagset::emptyElement;
-my $isBodyElement = \%HTML::Tagset::isBodyElement;
-my $isPhraseMarkup = \%HTML::Tagset::isPhraseMarkup;
-my $isFormElement = \%HTML::Tagset::isFormElement;
-
-# Accommodate HTML::TokeParser's idea of a "tag."
-$isKnown->{"$_/"} = 1 for keys %{$emptyElement};
-my $isBlockLevel = { map {; $_ => 1 }
-                     grep { ! ( $isPhraseMarkup->{$_} || $isFormElement->{$_} ) }
-                     keys %{$isBodyElement}
-                 };
-sub tags {
-    grep { ! /\W/ }
-        sort keys %HTML::Tagset::isKnown;
-}
-
-sub xu { __PACKAGE__->new(shift) }
-
-sub new {
-    my $class = shift;
-    my $arg = shift or croak [ caller(0) ]->[3], " requires an argument";
-    my $self = bless {}, $class;
-
-    if ( blessed($arg) )
+sub _make_sane_doc {
+    my $self = shift;
+#    use YAML; die YAML::Dump($self);
+    my $doc;
+    my $raw = $self->source_string;
+    if ( blessed($self->source) =~ /\AXML::LibXML::/ ) # Known good.
     {
-        croak "Blessed items not supported yet";
+        $self->_type("document");
+        return $self->parse_html_string($raw);
     }
-    elsif ( ref($arg) )
+    elsif ( $raw =~ /\A(?:<\W[^>]+>|\s+)*<html(?:\s|>)/i )
     {
-        croak "Refs not supported yet{";
+        $self->_type("document");
+        return $self->parse_html_string($raw);
     }
     else
     {
-        $self->_parse( $arg );
+        $self->_type("fragment");
+        return $self->parse_html_string(<<"_EOHTML");
+<html><head><title>Untitled $TITLE_ATTR Document</title></head><body>
+   <div title="$TITLE_ATTR">
+   $raw
+   </div>
+</body></html>
+_EOHTML
     }
-    $self;
+#    return $doc;
 }
 
-sub old_new_get_it {
-    my $class = shift;
-    my $arg = shift or croak "new requires an argument";
-    my $self = bless {}, $class;
+sub is_fragment { +shift->type eq 'fragment' }
+sub is_document { +shift->type eq 'document' }
 
-    if ( blessed($arg) eq "XML::LibXML::Element" )
-    {
-        $self->_parse( $arg->serialize );
-    }
-    elsif ( blessed($arg) eq "Path::Class::File" )
-    {
-        $self->_parse( scalar $arg->slurp );
-    }
-    elsif ( ref($arg) eq "SCALAR" )
-    {
-        $self->_parse( $$arg );
-    }
-    elsif ( blessed($arg) eq __PACKAGE__ )
-    {
-        $self->_parse( $arg->as_string ); # Cloning.
-    }
-    elsif ( blessed($arg) =~ /\AURI::https?/ )
-    {
-        $self->_parse( LWP::Simple::get($arg) );
-    }
-    elsif ( blessed($arg) and $arg->can("getlines") )
-    {
-        $self->_parse( join("", $arg->getlines) );
-    }
-    elsif ( ref($arg) eq 'GLOB' )
-    {
-        # $self->_parse( scalar Path::Class::File->new($arg)->slurp );
-    }
-    else
-    {
-        $self->_parse( scalar Path::Class::File->new($arg)->slurp );
-    }
-    $self;
-}
-
-sub debug {
+sub as_fragment { # force_fragment...? set?
     my $self = shift;
-    $self->{_debug} = shift if @_;
-    $self->{_debug} || 0;
-}
 
-sub as_xhtml {
-    +shift->doc->serialize;
-}
-
-sub as_fragment {
-    my $self = shift;
-    my ( $fragment ) = $self->doc->findnodes($FRAGMENT_XPATH);
-    $fragment ||= $self->body;
-    my $out = "";
-    $out .= $_->serialize(1,"UTF-8") for $fragment->childNodes; # 321 encoding
-    return _trim($out);
 }
 
 sub as_string {
     my $self = shift;
-    my @args = @_ ? @_ : ( 1, "UTF-8" );
-    if ( $self->is_document )
-    {
-        return _trim( Encode::decode_utf8( $self->doc->serialize(@args) ) );
-    }
-    elsif ( $self->is_fragment )
-    {
-        croak "No root in document\n", $self->doc->serialize
-            unless $self->root;
-
-        my ( $fragment ) = $self->root->findnodes($FRAGMENT_XPATH);
-
-        croak "No fragment...?\n", $self->doc->serialize
-            unless $fragment;
-
-        my $out = "";
-        $out .= $_->serialize(@args) for $fragment->childNodes;
-
-        return Encode::decode_utf8( _trim($out) );
-    }
-    else
-    {
-        die "No type was found, internal issue :(";
-    }
+    $self->is_fragment ? $self->as_fragment : $self->as_xhtml;
 }
 
-sub is_document {
-    +shift->{_type} eq "document";
-}
-
-sub is_fragment {
-    +shift->{_type} eq "fragment";
-}
-
-sub _parse {
+sub as_text {
     my $self = shift;
-    $self->{_sanitized} =
-        $self->_sanitize( $self->{_original_string} = shift );
-
-    if ( $self->{_original_string} =~ /\A(?:<\W[^>]+>|\s+)*<html/i )
-    {
-        $self->{_type} = "document";
-        $self->{_doc} = $self->parser->parse_html_string($self->{_sanitized});
-        # Special case, doc contains ONLY 1 p and its first and last
-        # child of body then we should replace it with the FRAGMENT
-        # holder div.
-    }
-    else
-    {
-        # SHOULD we sanitize first?
-        $self->{_type} = "fragment";
-
-        $self->{_doc} = $self->parser
-            ->parse_html_string(join("\n",
-                                     "<html><head><title>Untitled $TITLE_ATTR Document</title></head><body>",
-                                     sprintf('<div title="%s">',
-                                             $TITLE_ATTR
-                                     ),
-                                     $self->{_sanitized},
-                                     #Encode::encode_utf8($self->{_sanitized}),
-                                     '</div></body></html>')
-            );
-    }
-
-    $self->root->normalize;
-    $self->doc;
+    $self->is_fragment ?
+        $self->body->textContent : $self->doc->textContent;
 }
 
-sub root {
-    +shift->doc->getDocumentElement;
-}
-
-sub doc {
-    +shift->{_doc};
-}
-
-sub text {
-    +shift->doc->getDocumentElement->textContent;
-}
-
-sub parser {
-    my $self = shift;
-    return $self->{_parser} if $self->{_parser};
-    $self->{_parser} = XML::LibXML->new;
-    $self->{_parser}->recover_silently(1);
-    $self->{_parser}->keep_blanks(1);
-    $self->{_parser};
-}
-
-sub is_valid {
-    my $self = shift;
-    return 1 if $self->doc->is_valid;
-    # 321 debug about which DTD is being used.
-    my $dtd_name = shift || "xhtml1-transitional";
-    my $dtd_string = HTML::DTD->get_dtd("$dtd_name.dtd");
-    $self->{_dtd} = XML::LibXML::Dtd->parse_string($dtd_string);
-    return $self->doc->is_valid($self->{_dtd}) ? $self : undef;
-}
-
-sub validate {
-    my $self = shift;
-    return 1 if $self->is_valid;
-    return $self->doc->validate($self->{_dtd});
-}
-
-sub _original_string {
-    my $self = shift;
-    $self->{_original_string} ||= shift;
-#    $self->{_original_string} ||= Encode::encode_utf8( shift ); #321
-    $self->{_original_string};
-}
-
-sub _return {
-    my $self = shift; # 321 ARGS for serialize.
-    xml_normalize( $self->doc );
-    my $callers_wantarray = [ caller(1) ]->[5];
-    return unless defined $callers_wantarray; # Void context.
-    return $self;    # Should always return self?
-}
-
-sub fix {
-    my $self = shift;
-    return $self->_return if $self->is_valid;
-
-    for my $fixable ( qw( img ) )
-    {
-        my $method = "_fix_$fixable";
-        for my $node ( $self->root->findnodes("//$fixable") )
-        {
-            $self->$method($node);
-        }
-    }
-
-    $self->is_valid()
-        or carp "Could not fix the problems with this document";
-    $self->validate();
-    $self->_return;
-}
-
-sub _sanitize {
-    my $self = shift;
-    my $fragment = shift or return;
-    #$fragment = Encode::decode_utf8($fragment);
-    my $p = HTML::TokeParser::Simple->new(\$fragment);
-    my $renew = "";
-    my $in_body = 0;
-  TOKEN:
-    while ( my $token = $p->get_token )
-    {
-        #warn sprintf("%10s %10s %s\n",  $token->[-1], $token->get_tag, blessed($token));
-        #no warnings "uninitialized";
-        if ( $isKnown->{$token->get_tag} )
-        {
-            if ( $token->is_start_tag )
-            {
-                my @pair;
-                for my $attr ( @{ $token->get_attrseq } )
-                {
-                    next if $attr eq "/";
-                    my $value = encode_entities(decode_entities($token->get_attr($attr)));
-                    push @pair, join("=",
-                                     $attr,
-                                     qq{"$value"});
-                }
-                $renew .= "<" . join(" ", $token->get_tag, @pair);
-                $renew .= ( $token->get_attr("/") || $emptyElement->{$token->get_tag} ) ? "/>" : ">";
-            }
-            else
-            {
-                $renew .= $token->as_is;
-            }
-        }
-        elsif ( $token->is_declaration or $token->is_pi )
-        {
-            $renew .= $token->as_is;
-        }
-        else
-        {
-            $renew .= encode_entities(decode_entities($token->as_is),'<>"&');
-        }
-    }
-    return $renew;
-}
-
-sub body {
-    [ shift->doc->findnodes("//body") ]->[0];
-}
-
-sub head {
-    [ shift->doc->findnodes("//head") ]->[0];
-}
-
-sub _make_selector {
-    my $self = shift;
-    my $selector = shift;
-    unless ( $selector )
-    {
-        my $base = $self->is_fragment ? $FRAGMENT_SELECTOR : "body";
-        $selector = "$base, $base *";
-    }
-    warn "Selector: $selector" if $self->debug > 2;
-    $selector =~ m,\A/, ?
-        $selector :
-        HTML::Selector::XPath::selector_to_xpath($selector);
-}
-
-sub traverse {
-    my $self = shift;
-    my $xpath = $self->_make_selector(+shift) if @_ == 2;
-    my $code = shift;
-
-    if ( $xpath )
-    {
-        for my $node ( $self->root->findnodes("$xpath") )
-        {
-            $code->($node);
-        }
-    }
-    else
-    {
-        $code->($self->root);
-    }
-    $self->_return;
-}
-
-
-sub enpara {
-    my $self = shift;
-    my $xpath = $self->_make_selector(+shift);
-    my $root = $self->root;
-    my $doc = $self->doc;
-
-  NODE:
-    for my $designated_enpara ( $root->findnodes("$xpath") )
-    {
-        # warn "FOUND ", $designated_enpara->nodeName, $/;
-        # warn "*********", $designated_enpara->toString if $self->debug > 2;
-        next unless $designated_enpara->nodeType == 1;
-        next NODE if $designated_enpara->nodeName eq 'p';
-        if ( $designated_enpara->nodeName eq 'pre' )  # I don't think so, honky.
-        {
-            # Expand or leave it alone? or ->validate it...?
-            carp "It makes no sense to enpara within a <pre/>; skipping";
-            next NODE;
-        }
-        next unless $isBlockLevel->{$designated_enpara->nodeName};
-
-        $self->_enpara_this_nodes_content($designated_enpara, $doc);
-    }
-    $self->_enpara_this_nodes_content($root, $doc);
-    $self->_return;
-}
-
-sub _enpara_this_nodes_content {
-    my ( $self, $parent, $doc ) = @_;
-    my $lastChild = $parent->lastChild;
-    my @naked_block;
-    for my $node ( $parent->childNodes )
-    {
-        if ( $isBlockLevel->{$node->nodeName}
-             or
-             $node->nodeName eq "a" # special case block level, so IGNORE
-             and
-             grep { $_->nodeName eq "img" } $node->childNodes
-             )
-        {
-            next unless @naked_block; # nothing to enblock
-            my $p = $doc->createElement("p");
-            $p->setAttribute("enpara","enpara");
-            $p->setAttribute("line",__LINE__) if $self->debug > 4;
-            $p->appendChild($_) for @naked_block;
-            $parent->insertBefore( $p, $node )
-                if $p->textContent =~ /\S/;
-            @naked_block = ();
-        }
-        elsif ( $node->nodeType == 3
-                and
-                $node->nodeValue =~ /(?:[^\S\n]*\n){2,}/
-                )
-        {
-            my $text = $node->nodeValue;
-            my @text_part = map { $doc->createTextNode($_) }
-                split /([^\S\n]*\n){2,}/, $text;
-
-            my @new_node;
-            for ( my $x = 0; $x < @text_part; $x++ )
-            {
-                if ( $text_part[$x]->nodeValue =~ /\S/ )
-                {
-                    push @naked_block, $text_part[$x];
-                }
-                else # it's a blank newline node so _STOP_
-                {
-                    next unless @naked_block;
-                    my $p = $doc->createElement("p");
-                    $p->setAttribute("enpara","enpara");
-                    $p->setAttribute("line",__LINE__) if $self->debug > 4;
-                    $p->appendChild($_) for @naked_block;
-                    @naked_block = ();
-                    push @new_node, $p;
-                }
-            }
-            if ( @new_node )
-            {
-                $parent->insertAfter($new_node[0], $node);
-                for ( my $x = 1; $x < @new_node; $x++ )
-                {
-                    $parent->insertAfter($new_node[$x], $new_node[$x-1]);
-                }
-            }
-            $node->unbindNode;
-        }
-        elsif ( $node->nodeName !~ /\Ahead|body\z/ ) # Hack? Fix real reason? 321
-        {
-            push @naked_block, $node; # if $node->nodeValue =~ /\S/;
-        }
-
-        if ( $node->isSameNode( $lastChild )
-             and @naked_block )
-        {
-            my $p = $doc->createElement("p");
-            $p->setAttribute("enpara","enpara");
-            $p->setAttribute("line",__LINE__) if $self->debug > 4;
-            $p->appendChild($_) for ( @naked_block );
-            $parent->appendChild($p) if $p->textContent =~ /\S/;
-        }
-    }
-
-    my $newline = $doc->createTextNode("\n");
-    my $br = $doc->createElement("br");
-
-    for my $p ( $parent->findnodes('//p[@enpara="enpara"]') )
-    {
-        $p->removeAttribute("enpara");
-        $parent->insertBefore( $newline->cloneNode, $p );
-        $parent->insertAfter( $newline->cloneNode, $p );
-
-        my $frag = $doc->createDocumentFragment();
-
-        my @kids = $p->childNodes();
-        for ( my $i = 0; $i < @kids; $i++ )
-        {
-            my $kid = $kids[$i];
-            next unless $kid->nodeName eq "#text";
-            my $text = $kid->nodeValue;
-            $text =~ s/\A\r?\n// if $i == 0;
-            $text =~ s/\r?\n\z// if $i == $#kids;
-
-            my @lines = map { $doc->createTextNode($_) }
-                split /(\r?\n)/, $text;
-
-            for ( my $i = 0; $i < @lines; $i++ )
-            {
-                $frag->appendChild($lines[$i]);
-                unless ( $i == $#lines
-                         or
-                         $lines[$i]->nodeValue =~ /\A\r?\n\z/ )
-                {
-                    $frag->appendChild($br->cloneNode);
-                }
-            }
-            $kid->replaceNode($frag);
-        }
-    }
-}
-
-sub _trim {
-    s/\A\s+|\s+\z//g for @_;
-    @_ : $_[0];
-}
-
-sub _fix_img {
-    my ( $self, $img ) = @_;
-    unless ( $img->hasAttribute("src") )
-    {
-        croak "There is no way to fix an image without a source";
-    }
-    unless ( $img->hasAttribute("alt") )
-    {
-        $img->setAttribute("alt", $img->getAttribute("src"));
-    }
-}
-
-sub _fix_center {
-    my ( $self, $center ) = @_;
-    # <center> --> <div style="text-align:center">
-    die "Unimplemented";
-}
-
-sub _make_selector_xpath {
-    my $self = shift;
-    my $selector = shift;
-    my $base = $self->is_fragment ? $FRAGMENT_SELECTOR : "body";
-    my $xpath = HTML::Selector::XPath::selector_to_xpath("$base $selector");
-    warn "XPATH: $xpath\n" if $self->debug >= 5;
-    return $xpath;
-}
-
-sub remove {
-    my $self = shift;
-    my $xpath = $self->_make_selector_xpath(@_);
-    for my $node ( $self->root->findnodes($xpath) )
-    {
-        $node->parentNode->removeChild($node);
-    }
-    $self->_return;
-}
-
-sub strip_tags {
-    my $self = shift;
-    my $xpath = $self->_make_selector_xpath(@_);
-
-    for my $node ( $self->root->findnodes($xpath) )
-    {
-        my $fragment = $self->doc->createDocumentFragment;
-        for my $n ( $node->childNodes )
-        {
-            $fragment->appendChild($n);
-        }
-        $node->replaceNode($fragment);
-    }
-    $self->_return;
-}
-
-sub same_same {
-    my $self = shift;
-    my $other = shift;
-    my $self2 = blessed($other) eq __PACKAGE__ ?
-        $other : __PACKAGE__->new($other);
-
-    $self->parser->keep_blanks(0);
-
-    my $one = $self->parser->parse_string($self->root->serialize(0))->serialize(0);
-    my $two = $self->parser->parse_string($self2->root->serialize(0))->serialize(0);
-
-    $self->parser->keep_blanks(1);
-
-    $one eq $two or die "$one\n\n$two"
-}
-
-sub clone {
-    my $self = shift;
-    my $class = blessed($self);
-    $class->new($self);
-}
 
 1;
 
 __END__
+
+Definitions:
+ Fragment, <b>anything</b> in the <body>
 
 =head1 NAME
 
