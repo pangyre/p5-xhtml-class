@@ -4,6 +4,7 @@ no warnings "uninitialized";
 use namespace::clean;
 use Moose::Exporter;
 Moose::Exporter->setup_import_methods( as_is => [ 'xu' ] );
+use XHTML::Class::Types;
 
 sub xu { __PACKAGE__->new(@_) }
 
@@ -20,16 +21,27 @@ sub BUILDARGS {
 sub BUILD {
     my $self = shift;
     my $arg = shift;
-    # convert source to doc.
-    # barf on bad args.
+    # Barf on bad args.
     $self->meta->has_method($_) or confess "No such attribute: $_" for ( keys %$arg );
+    # Convert source to doc.
+    $self->_doc( $arg->{source} );
 }
-    
+
+has "source" =>
+    is => "ro",
+    required => 1,
+    ;
+
+has "doc" =>
+    is => "ro",
+    isa => "XHTML::Class::Document",
+    coerce => 1,
+    writer => "_doc",
+    ;
 
 1;
 
 __END__
-
 
 use HTML::Tagset 3.02 ();
 use HTML::Entities qw( encode_entities decode_entities );
