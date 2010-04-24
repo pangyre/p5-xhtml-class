@@ -3,10 +3,10 @@ use Moose;
 no warnings "uninitialized";
 use namespace::clean;
 use Moose::Exporter;
-Moose::Exporter->setup_import_methods( as_is => [ 'xu' ] );
+Moose::Exporter->setup_import_methods( as_is => [ 'xc' ] );
 use XHTML::Class::Types;
 
-sub xu { __PACKAGE__->new(@_) }
+sub xc { __PACKAGE__->new(@_) }
 
 sub BUILDARGS {
     my ( $class, @arg ) = @_;
@@ -34,7 +34,7 @@ has "source" =>
 
 has "doc" =>
     is => "ro",
-    isa => "XHTML::Class::Document",
+    isa => "XC::Document",
     coerce => 1,
     writer => "_doc",
     ;

@@ -1,19 +1,43 @@
 use Moose;
 use Moose::Util::TypeConstraints;
+use namespace::clean;
 
 # use Params::Coerce ();
 use URI ();
 use XML::LibXML;
 
-subtype "XHTML::Class::Document" => as class_type("XML::LibXML::Document");
-coerce "XHTML::Class::Document"
+subtype "XC::LibXML::Element" => as class_type("XML::LibXML::Element");
+subtype "XC::URI" => as class_type("URI");
+subtype "XC::Path::Class" => as class_type("Path::Class::File");
+
+subtype "XC::Document" => as class_type("XML::LibXML::Document");
+coerce  "XC::Document"
     => from "Str"
-        => via { XML::LibXML->new->parse_html_string($_) }
+        => via { _from_string($_) }
+    => from "XC::LibXML::Element"
+        => via { _from_string($_->serialize) }
+    => from "XC::URI"
+        => via {
+            require LWP::Simple;
+            _from_string(LWP::Simple::get($_));
+        }
+    => from "XC::Path::Class"
+        => via {
+            _from_string( scalar $_->slurp );
+        }
     ;
+
+sub _from_string {
+    my $str = shift;
+    XML::LibXML->new->parse_html_string($str);
+}
+
 
 1;
 
 __END__
+Object
+  can getline?
 
     => from "XML::LibXML::Document"
     => via { $_ }

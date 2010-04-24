@@ -2,10 +2,10 @@
 use warnings;
 use strict;
 use Test::More;
-use XHTML::Class;# qw( xu );
+use XHTML::Class;
 
-ok( my $xhtml = xu("OH HAI"),
-    "New simple string based xu" );
+ok( my $xhtml = xc("OH HAI"),
+    "New simple string based xc" );
 
 is( $xhtml, "OH HAI",
     "Overloads as same" );
