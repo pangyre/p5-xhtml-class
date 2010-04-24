@@ -8,3 +8,5 @@ requires qw( doc root );
 1;
 
 __END__
+
+this should do a BUILD to jump into the loop?

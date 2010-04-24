@@ -59,8 +59,6 @@ has "type" =>
     is => "ro",
     isa => "DWIMtype",
     writer => "_type",
-#    lazy => 1,
-#    default => "fragment"
     ;
 
 has "doc" =>
@@ -132,9 +130,7 @@ sub _make_sane_doc {
         $self->_type("fragment");
         return $self->parse_html_string(<<"_EOHTML");
 <html><head><title>Untitled $TITLE_ATTR Document</title></head><body>
-   <div title="$TITLE_ATTR">
-   $raw
-   </div>
+   <div title="$TITLE_ATTR">$raw</div>
 </body></html>
 _EOHTML
     }
@@ -146,8 +142,30 @@ sub is_document { +shift->type eq 'document' }
 
 sub as_fragment { # force_fragment...? set?
     my $self = shift;
-
+    my ( $fragment ) = $self->findnodes($FRAGMENT_XPATH);
+    $fragment ||= $self->body;
+    my $out = "";
+    $out .= $_->serialize(1,"UTF-8") for $fragment->childNodes; # 321 encoding
+    _trim($out);
 }
+
+has "body" =>
+    is => "ro",
+    isa => "XML::LibXML::Element",
+    lazy => 1,
+    required => 1,
+    default => sub { 
+        [ +shift->doc->findnodes("//body") ]->[0];
+    };
+
+has "head" =>
+    is => "ro",
+    isa => "XML::LibXML::Element",
+    lazy => 1,
+    required => 1,
+    default => sub { 
+        [ +shift->doc->findnodes("//head") ]->[0];
+    };
 
 sub as_string {
     my $self = shift;
@@ -157,9 +175,13 @@ sub as_string {
 sub as_text {
     my $self = shift;
     $self->is_fragment ?
-        $self->body->textContent : $self->doc->textContent;
+        _trim($self->body->textContent) : _trim($self->doc->textContent);
 }
 
+sub _trim {
+    s/\A\s+|\s+\z//g for @_;
+    wantarray ? @_ : $_[0];
+}
 
 1;
 
