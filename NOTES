@@ -1,3 +1,11 @@
+NO... I think this is not broken out enough. There should be a ::doc
+and ::frag. They share plenty, yes but they require too much juggling
+together *and* they eliminate the possibility of meta settings like
+auto_fix in XC proper to apply to each instance. Or even as plugins in
+that sense...
+
+NEED TO BACK UP A LITTLE and run it again.
+
 Is XHTML::Class going too far? And assuming too much responsibility?
 
 Let's let the spell checker answer that: "RESPONSIBILITY is correct"

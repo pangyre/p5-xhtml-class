@@ -1,8 +1,9 @@
 package XHTML::Class;
 use Moose;
+with qw( XHTML::Class::Role::Enpara XHTML::Class::Role::Fix );
 use namespace::clean;
 use Moose::Exporter;
-Moose::Exporter->setup_import_methods( as_is => [ 'xc' ] );
+Moose::Exporter->setup_import_methods( as_is => [qw( xc selector_to_xpath )] );
 use XHTML::Class::Types;
 use overload q{""} => sub { +shift->as_string }, fallback => 1;
 no warnings "uninitialized";
@@ -10,6 +11,7 @@ no warnings "uninitialized";
 our $VERSION = "0.90_01";
 our $AUTHORITY = 'cpan:ASHLEY';
 
+use Carp qw( carp croak );
 use XML::LibXML;
 use HTML::Selector::XPath qw(selector_to_xpath);
 our $TITLE_ATTR = join("/", __PACKAGE__, $VERSION);
@@ -32,7 +34,7 @@ sub BUILD {
     my $self = shift;
     my $arg = shift;
     # Barf on bad args.
-    $self->meta->has_method($_) or confess "No such attribute: $_" for ( keys %$arg );
+    $self->meta->has_method($_) or croak "No such attribute: $_" for ( keys %$arg );
     # Convert source to doc.
     $self->_source_string( $arg->{source} );
     $self->_doc($self->_make_sane_doc);
@@ -68,22 +70,24 @@ has "doc" =>
     lazy => 1,
     builder => "_make_sane_doc",
     handles => {
-                findnodes => "findnodes",
-                firstChild => "firstChild",
-                root => "getDocumentElement",
-                as_xhtml => "serialize",
-                # as_text => "textContent",
-               }
+        encoding => "actualEncoding",
+        findnodes => "findnodes",
+        firstChild => "firstChild",
+        root => "documentElement",
+        as_xhtml => "serialize_html",
+        is_valid => "is_valid",
+        validate => "validate",
+    }
     ;
 
-my @LIBXML_ARG = qw( recover recover_silently );
+my @LIBXML_ARG = qw( recover );
 has \@LIBXML_ARG =>
     is => "ro",
     isa => "Bool",
     lazy_build => 1,
     ;
 
-has "keep_blanks" =>
+has [qw( recover_silently keep_blanks )] =>
     is => "ro",
     isa => "Bool",
     lazy_build => 1,
@@ -105,6 +109,9 @@ has "libxml" =>
         # We want it off but defer to caller.
         $self->has_keep_blanks ?
             $p->keep_blanks($self->has_keep_blanks) : $p->keep_blanks(0);
+        # We want it on but defer to caller.
+        $self->has_recover_silently ?
+            $p->recover_silently($self->recover_silently) : $p->recover_silently(1);
         $p;
     },
     handles => [qw( parse_html_string )],
@@ -183,9 +190,26 @@ sub _trim {
     wantarray ? @_ : $_[0];
 }
 
+
+sub _make_selector {
+    my $self = shift;
+    my $selector = shift;
+    unless ( $selector )
+    {
+        my $base = $self->is_fragment ? $FRAGMENT_SELECTOR : "body";
+        $selector = "$base, $base *";
+    }
+    selector_to_xpath($selector);
+}
+
+
 1;
 
 __END__
+
+    else
+    $selector =~ m,\A/, ?
+        $selector :
 
 Definitions:
  Fragment, <b>anything</b> in the <body>
@@ -441,13 +465,9 @@ I can see this being easier to use functionally. I haven't decided on the argspe
 
 =head1 BUGS AND LIMITATIONS
 
-All input should be UTF-8 or at least safe to run L<decode_utf8|Encode/decode_utf8> on. Regular Latin character sets, I suspect, will be fine but extended sets will probably give garbage or unpredictable results; guessing.
+Plenty, I am certin. I am not adept with encodings and I would love any bug reports or fixes to anything I've overlooked.
 
-This will wreck XML and probably XHTML with a custom DTD too. It uses L<HTML::Tagset>'s conception of what valid tags are. This is not optimal but it is easier than DTD handling. It might improve to more automatic detection in the future.
-
-I have used many of these methods and snippets in many projects and I'm tired of recycling them. Some are extremely useful and, at least in the case of L</enpara>, better than any other implementation I've been able to find in any language.
-
-That said, a lot of the code herein is not well tested or at least not well tested in this incarnation. Bug reports and good feedback are B<adored>.
+The code herein is not well tested or at least not well tested in this incarnation. Bug reports and good feedback are B<adored>.
 
 =head1 SEE ALSO
 
@@ -574,3 +594,11 @@ NOTES, leftovers.
 #my $isList = \%HTML::Tagset::isList;
 #my $isTableElement = \%HTML::Tagset::isTableElement;
 #my $p_closure_barriers = \@HTML::Tagset::p_closure_barriers;
+
+ALL METHODS take a selector and default to * (OR //body/*?) otherwise.
+
+
+This will wreck XML and probably XHTML with a custom DTD too. It uses L<HTML::Tagset>'s conception of what valid tags are. This is not optimal but it is easier than DTD handling. It might improve to more automatic detection in the future.
+
+I have used many of these methods and snippets in many projects and I'm tired of recycling them. Some are extremely useful and, at least in the case of L</enpara>, better than any other implementation I've been able to find in any language.
+

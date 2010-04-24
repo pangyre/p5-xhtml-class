@@ -5,10 +5,12 @@ use Test::More;
 use Test::Exception;
 use XHTML::Class;
 
-dies_ok( sub { my $xhtml = xu() },
-         "Empty xu dies" );
+can_ok("XHTML::Class", "xc");
 
-dies_ok( sub { my $xhtml = xu({ sourze => "some string" }) },
-         "Bad key to xu dies" );
+dies_ok( sub { my $xhtml = xc() },
+         "Empty xc dies" );
+
+dies_ok( sub { my $xhtml = xc({ sourze => "some string" }) },
+         "Bad key to xc dies" );
 
 done_testing();
