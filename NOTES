@@ -31,3 +31,28 @@ PRETTY BLURRY!!! It shouldn't be.
 as_text
 as_xhtml
 as_string (relative to whatever it started as?)
+
+flow
+  well-formed? leave it alone!
+
+stream parsing? NO
+
+has dtd
+ coerce from string or URI
+ ->XML::LibXML::Dtd
+has parser?
+has source (string?) 
+has debug 
+has encoding
+
+Sanitize only if a validation fails
+
+XHTML::ClassRole::Enpara?
+XHTML::ClassRole::Sanitize
+
+requires qw( make_selector doc )
+
+
+package XHTML::Class;
+requires qw( sanitize )?
+

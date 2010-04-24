@@ -2,9 +2,9 @@
 use warnings;
 use strict;
 use Test::More;
-use XHTML::Class qw( xu );
+use XHTML::Class;
 
-ok( my $xhtml = xu("OH HAI"),
+ok( my $xhtml = XHTML::Class->new("OH HAI"),
     "New simple string based xu" );
 
 is( $xhtml, "OH HAI",

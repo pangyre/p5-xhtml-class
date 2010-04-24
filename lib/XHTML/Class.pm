@@ -1,16 +1,39 @@
 package XHTML::Class;
-require Exporter;
-@ISA = qw(Exporter);
-@EXPORT_OK = qw( xu );
-use warnings;
-use strict;
+use Moose;
 no warnings "uninitialized";
-use Carp;
-use XML::LibXML;
+use namespace::clean;
+use Moose::Exporter;
+Moose::Exporter->setup_import_methods( as_is => [ 'xu' ] );
+
+sub xu { __PACKAGE__->new(@_) }
+
+sub BUILDARGS {
+    my ( $class, @arg ) = @_;
+    # Standard {} construction.
+    return $arg[0] if @arg == 1 and ref($arg[0]) eq "HASH";
+    # Single *something* to become source.
+    return { source => $arg[0] } if @arg == 1;
+    # Plain list.
+    return { @_ };
+}
+
+sub BUILD {
+    my $self = shift;
+    my $arg = shift;
+    # convert source to doc.
+    # barf on bad args.
+    $self->meta->has_method($_) or confess "No such attribute: $_" for ( keys %$arg );
+}
+    
+
+1;
+
+__END__
+
+
 use HTML::Tagset 3.02 ();
 use HTML::Entities qw( encode_entities decode_entities );
 use HTML::Selector::XPath ();
-use HTML::DTD;
 use Path::Class;
 use Encode;
 use Scalar::Util qw( blessed );
@@ -493,7 +516,7 @@ sub _enpara_this_nodes_content {
 
 sub _trim {
     s/\A\s+|\s+\z//g for @_;
-    wantarray ? @_ : $_[0];
+    @_ : $_[0];
 }
 
 sub _fix_img {
@@ -959,11 +982,3 @@ NOTES, leftovers.
 #my $isList = \%HTML::Tagset::isList;
 #my $isTableElement = \%HTML::Tagset::isTableElement;
 #my $p_closure_barriers = \@HTML::Tagset::p_closure_barriers;
-
-
-has original
-has debug 
-has encoding?
-
-Sanitize only if a validation fails
-
