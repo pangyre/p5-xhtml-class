@@ -6,6 +6,8 @@ use Moose::Exporter;
 Moose::Exporter->setup_import_methods( as_is => [ 'xc' ] );
 use XHTML::Class::Types;
 
+use overload q{""} => sub { +shift->as_string }, fallback => 1;
+
 sub xc { __PACKAGE__->new(@_) }
 
 sub BUILDARGS {
@@ -24,7 +26,8 @@ sub BUILD {
     # Barf on bad args.
     $self->meta->has_method($_) or confess "No such attribute: $_" for ( keys %$arg );
     # Convert source to doc.
-    $self->_doc( $arg->{source} );
+    $self->_source_string( $arg->{source} );
+#321    $self->doc( 
 }
 
 has "source" =>
@@ -32,12 +35,53 @@ has "source" =>
     required => 1,
     ;
 
+has "source_string" =>
+    is => "ro",
+    writer => "_source_string",
+    isa => "XC::Source",
+    coerce => 1,
+    ;
+
 has "doc" =>
     is => "ro",
-    isa => "XC::Document",
-    coerce => 1,
+    isa => "XML::LibXML::Document",
     writer => "_doc",
+    handles => {
+                findnodes => "findnodes",
+                firstChild => "firstChild",
+                root => "getDocumentElement",
+               }
     ;
+
+my @LIBXML_ARG = qw( recover recover_silently );
+has \@LIBXML_ARG =>
+    is => "ro",
+    isa => "Bool",
+    lazy_build => 1,
+    ;
+
+has "libxml" =>
+    is => "ro",
+    isa => "XML::LibXML",
+    required => 1,
+    lazy => 1,
+    default => sub {
+        my $self = shift;
+        my $p = XML::LibXML->new;
+        for my $arg ( @LIBXML_ARG )
+        {
+            my $predicate = "has_$arg";
+            $p->$arg($self->$arg) if $self->$predicate;
+        }
+    }
+    ;
+
+sub as_string { ... }
+
+sub as_text { ... }
+
+sub as_xhtml { ... }
+
 
 1;
 
