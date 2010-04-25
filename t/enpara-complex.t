@@ -1,34 +1,23 @@
-use strict;
 use warnings;
-use Test::More "no_plan";
-use Test::Exception;
+use strict;
+use Test::More;
 use FindBin;
 use File::Spec;
 use Path::Class;
 use lib File::Spec->catfile($FindBin::Bin, '../lib');
 use XHTML::Class;
-use Algorithm::Diff;
-use Encode;
-use autodie;
 
 {
-    my $before = Path::Class::File->new("$FindBin::Bin/files/enpara-complex-before.txt");
-    open my $bfh, "<:utf8", $before;
-    $before =  do { local $/; <$bfh> };
-
-    my $after = Path::Class::File->new("$FindBin::Bin/files/enpara-complex-after.txt");
-    open my $afh, "<:utf8", $after;
-    $after =  do { local $/; <$afh> };
+    my $before = Path::Class::File->new("$FindBin::Bin/files/enpara-complex-before.txt")->slurp;
+    my $after = Path::Class::File->new("$FindBin::Bin/files/enpara-complex-after.txt")->slurp;
 
     cmp_ok( XHTML::Class::_trim($before), "ne", XHTML::Class::_trim($after),
             "Before and after differ");
 
-    ok( my $xc = XHTML::Class->new(\$before),
+    ok( my $xc = XHTML::Class->new($before),
         "XHTML::Class->new files/enpara-complex-before.txt->slurp" );
 
     #    $xc->debug(3);
-
-    isa_ok( $xc, "XHTML::Class" );
 
 #    is(XHTML::Class::_trim($xc->as_string),
 #       XHTML::Class::_trim($before),
@@ -41,7 +30,7 @@ use autodie;
         "Enpara'ed content of 'before' matches 'after'" );
 
     ok( $xc->is_valid,
-        "Document validates" );
+        "Document validates" ) or diag($xc->as_xhtml);
 
 }
 

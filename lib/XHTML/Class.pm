@@ -17,6 +17,7 @@ our $AUTHORITY = 'cpan:ASHLEY';
 use Encode;
 use Carp qw( carp croak );
 use XML::LibXML;
+use XML::Catalogs::HTML -libxml;
 use HTML::Selector::XPath ();
 our $TITLE_ATTR = join("/", __PACKAGE__, $VERSION);
 our $FRAGMENT_SELECTOR = "div[title='$TITLE_ATTR']";
@@ -143,11 +144,14 @@ sub _make_sane_doc {
     {
         $self->_type("fragment");
         return $self->parse_html_string(<<"_EOHTML");
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html><head><title>Untitled $TITLE_ATTR Document</title></head><body>
    <div title="$TITLE_ATTR">$raw</div>
 </body></html>
 _EOHTML
     }
+#
 #    return $doc;
 }
 

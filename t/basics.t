@@ -12,6 +12,13 @@ dies_ok( sub { my $xc = XHTML::Class->new },
          "XHTML::Class->new dies without content" );
 
 {
+    ok( my $xc = XHTML::Class->new("30"),
+        'XHTML::Class->new("30")' );
+    isa_ok( $xc, "XHTML::Class" );
+    ok( $xc->is_valid, "Basic document is valid");
+}
+
+{
     my $before = Path::Class::File->new("$FindBin::Bin/files/basics-before.txt");
     my $after = Path::Class::File->new("$FindBin::Bin/files/basics-after.txt");
     cmp_ok( $before->slurp, "ne", $after->slurp,
