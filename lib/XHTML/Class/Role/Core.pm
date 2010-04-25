@@ -37,6 +37,24 @@ sub traverse {
 
 }
 
+sub same_same {
+    my $self  = shift;
+    my $other = shift;
+    my $self2 = blessed($other) eq blessed($self) ?
+        $other : $self->new($other);
+
+    my $blanks = $self->libxml->keep_blanks;
+    $self->libxml->keep_blanks(0);
+
+    my $one = $self->libxml->parse_string($self->root->serialize(0))->serialize(0);
+    my $two = $self->libxml->parse_string($self2->root->serialize(0))->serialize(0);
+
+    $self->libxml->keep_blanks($blanks); # Restore.
+
+    $one eq $two;#  or die "$one\n\n$two"
+}
+
+
 1;
 
 __END__
