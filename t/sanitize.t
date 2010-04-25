@@ -2,34 +2,39 @@ use warnings;
 use strict;
 use Test::More;
 use XHTML::Class;
-use YAML;
+# use YAML;
+use Encode;
+use utf8;
 
 local $/ = "\n::TEST::DATA::\n";
 
-while ( <DATA> )
+while ( my $pair = <DATA> )
 {
-    my ( $input, $expected ) = _trim(split /::/);
-
+    $pair = decode_utf8($pair);
+    my ( $input, $expected ) = split /::/, $pair;
     my $xc = XHTML::Class->new($input);
 
-    is( _trim($xc->as_string), _trim($expected),
-        _substr($expected)
-      );
-    # diag( YAML::Dump($xc) );
+    is($xc, XHTML::Class::_trim($expected),
+       _substr($expected) );
+
+#    is( _trim($xc->as_string),
+#       _trim($expected),
+#        _substr($expected)
+#      );
+    # diaag( YAML::Dump($xc) );
 }
 
+done_testing();
+
+exit 0;
+
 sub _substr {
-    my ( $copy ) = @_;
+    my ( $copy ) = encode("UTF8", shift);
     $copy =~ s/[^\S ]+//g; # Flatten for nicer verbosity display.
     length($copy) > 60 ?
         substr($copy, 0, 57) . "..." : $copy;
 }
 
-sub _trim {
-    my @copy = @_;
-    s/(\A\s+|\s+\z)//g for @copy;
-    wantarray ? @copy : $copy[0];
-}
 
 =head1 NOTES
 
@@ -53,7 +58,8 @@ OH<br />HAI!
 
 <p>OH HAI!
 ::
-<p>OH HAI!</p>
+<p>OH HAI!
+</p>
 
 ::TEST::DATA::
 
@@ -71,7 +77,7 @@ Naked entities: &lt;Q&amp;A&gt;
 
 <img src=no-quote.gif alt='<p class="asterix">*</p>' width=10%>
 ::
-<img src="no-quote.gif" alt="&lt;p class=&quot;asterix&quot;&gt;*&lt;/p&gt;" width="10%"/>
+<img src="no-quote.gif" alt="&lt;p class=&quot;asterix&quot;&gt;*&lt;/p&gt;" width="10%" />
 
 ::TEST::DATA::
 

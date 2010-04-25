@@ -15,7 +15,7 @@ my $_block  = { map {; $_ => 1 }
                 grep { ! ( $_phrase->{$_} || $_form->{$_} ) }
                 keys %{$_body}
                };
-# Accommodate HTML::TokeParser's idea of a "tag."
+# Accommodate HTML::TokeParser + XML's idea of a "tag."
 $_known->{"$_/"} = 0 for keys %{$_empty};
 
 sub tags {
