@@ -11,8 +11,8 @@ coerce  "XC::Source"
     => from "XC::URI" # What about file URIs?
         => via {
             #my $type ::file, ::https?
-            require LWP::Simple;
-            LWP::Simple::get($_);
+            require LWP::UserAgent;
+            LWP::UserAgent->new->get($_)->decoded_content;
         }
     => from "Object"
         => via {

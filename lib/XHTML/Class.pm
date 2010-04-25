@@ -346,7 +346,7 @@ The C<$something> comes through a coercion map so there is a large variety of th
 
 =item * Any object that can C<as_text> or C<as_string>.
 
-=item * A L<URI> object: this will make an L<LWP::Simple> C<get> request.
+=item * A L<URI> object: this will make an L<LWP::UserAgent> C<get>-E<gt>C<decoded_content> request.
 
 =back
 
