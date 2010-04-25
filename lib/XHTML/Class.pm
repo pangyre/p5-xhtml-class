@@ -1,6 +1,8 @@
 package XHTML::Class;
 use Moose;
-with qw( XHTML::Class::Role::Enpara XHTML::Class::Role::Fix );
+with qw( XHTML::Class::Role::Enpara XHTML::Class::Role::Fix
+         XHTML::Class::Role::Info );
+
 use namespace::clean;
 use Moose::Exporter;
 Moose::Exporter->setup_import_methods( as_is => [qw( xc selector_to_xpath )] );
@@ -19,6 +21,8 @@ our $FRAGMENT_SELECTOR = "div[title='$TITLE_ATTR']";
 our $FRAGMENT_XPATH = selector_to_xpath($FRAGMENT_SELECTOR);
 
 sub xc { __PACKAGE__->new(@_) }
+
+sub debug { 0 }
 
 sub BUILDARGS {
     my ( $class, @arg ) = @_;

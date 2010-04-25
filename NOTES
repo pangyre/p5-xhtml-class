@@ -4,7 +4,9 @@ together *and* they eliminate the possibility of meta settings like
 auto_fix in XC proper to apply to each instance. Or even as plugins in
 that sense...
 
-NEED TO BACK UP A LITTLE and run it again.
+Okay... maybe it's okay this way... it's just a messy problem space.
+I'm not sure there is any way around that so the UI is all that
+matters.
 
 Is XHTML::Class going too far? And assuming too much responsibility?
 
