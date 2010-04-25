@@ -1,6 +1,7 @@
 use Moose;
 use Moose::Util::TypeConstraints;
 use namespace::clean;
+use Carp qw( croak );
 
 enum "DWIMtype" => qw( document fragment );
 
@@ -24,10 +25,22 @@ coerce  "XC::Source"
         }
     ;
 
+sub _slurp {
+    my $name = shift;
+    open my $f, "<", $name or croak "Couldn't open $name for reading: $!";
+    local $/;
+    do { <$f> };
+}
 
 1;
 
 __END__
+
+    => from "Str"
+    => via {
+        confess "OH NOES";
+        -e $_ ? _slurp($_) : $_;
+    }
 
 
 #subtype "XC::LibXML::Element" => as class_type("XML::LibXML::Element");

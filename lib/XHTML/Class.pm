@@ -1,6 +1,7 @@
 package XHTML::Class;
 use Moose;
-with qw( XHTML::Class::Role::Enpara XHTML::Class::Role::Fix
+with qw( XHTML::Class::Role::Core
+         XHTML::Class::Role::Enpara XHTML::Class::Role::Fix
          XHTML::Class::Role::Info );
 
 use namespace::clean;
@@ -194,7 +195,7 @@ sub _trim {
     wantarray ? @_ : $_[0];
 }
 
-
+# rename css_to_xpath?
 sub _make_selector {
     my $self = shift;
     my $selector = shift;
@@ -205,7 +206,6 @@ sub _make_selector {
     }
     selector_to_xpath($selector);
 }
-
 
 1;
 
