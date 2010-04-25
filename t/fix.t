@@ -1,7 +1,6 @@
-use strict;
 use warnings;
-use Test::More "no_plan";
-use Test::Exception;
+use strict;
+use Test::More skip_all => "Fix role isn't back in the mix yet";
 use FindBin;
 use File::Spec;
 use Path::Class;
@@ -26,32 +25,7 @@ while ( <DATA> )
     #diag(YAML::Dump($xc));
 }
 
-sub _trim {
-    my @copy = @_;
-    s/(\A\s+|\s+\z)//g for @copy;
-    wantarray ? @copy : $copy[0];
-}
-
-=head1 DUMMY STUFF
-
-<p>OH HAI!
-::
-<p>OH HAI!
-</p>
-
-::TEST::DATA::
-
-<br height=10>
-::
-<br/>
-
-::TEST::DATA::
-
-<abbr>SS</abbr>
-::
-<abbr title="[SS]">SS</abbr>
-
-=cut
+done_testing();
 
 __DATA__
 <p>OH HAI!

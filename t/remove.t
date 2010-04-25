@@ -1,7 +1,6 @@
-use strict;
 use warnings;
-use Test::More "no_plan";
-use Test::Exception;
+use strict;
+use Test::More;
 use FindBin;
 use File::Spec;
 use lib File::Spec->catfile($FindBin::Bin, '../lib');
@@ -14,7 +13,7 @@ use XHTML::Class;
 <blockquote><p>Paragraph <i><b>two</b>...</i></p></blockquote>
 BEFORE
 
-    ok( my $xc = XHTML::Class->new(\$before),
+    ok( my $xc = XHTML::Class->new($before),
         "XHTML::Class->new(...)" );
 
     like( $xc->as_string, qr/<a[^.]+Paragraph one<\/a>./,
@@ -38,9 +37,10 @@ BEFORE
 
     ok( $xc->remove("p"), "Remove <p/>s" );
 
-#    diag([ $xc->doc->findnodes("//blockquote") ]->[0]->toStringHTML );
-    is( $xc->as_string, '<blockquote/>',
+    is( $xc->as_string, '<blockquote></blockquote>',
         'Just the empty <blockquote/> left');
 }
+
+done_testing();
 
 __END__

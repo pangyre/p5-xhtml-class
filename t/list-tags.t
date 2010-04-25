@@ -1,23 +1,16 @@
-use strict;
 use warnings;
-use Test::More "no_plan";
-use FindBin;
-use File::Spec;
-use Path::Class;
-use lib File::Spec->catfile($FindBin::Bin, '../lib');
+use strict;
+use Test::More;
 use XHTML::Class;
 
 {
-    ok( my $xc = XHTML::Class->new(\"."),
-        "Empty object" );
-
-    diag( join(" ", $xc->tags )) if $ENV{TEST_VERBOSE};
-
-    ok( my @tags = $xc->tags,
+    ok( my @tags = XHTML::Class->tags,
         "List of tags" );
 
     cmp_ok( @tags, ">=", 100,
             "100 or better tags" );
 }
+
+done_testing();
 
 __END__
