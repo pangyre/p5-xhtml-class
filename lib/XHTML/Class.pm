@@ -31,7 +31,7 @@ sub BUILDARGS {
     # Single *something* to become source.
     return { source => $arg[0] } if @arg == 1;
     # Plain list.
-    return { @_ };
+    return { @arg };
 }
 
 sub BUILD {
