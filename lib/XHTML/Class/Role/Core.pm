@@ -46,6 +46,7 @@ sub same_same {
     my $blanks = $self->libxml->keep_blanks;
     $self->libxml->keep_blanks(0);
 
+    # Does this even make sense...?
     my $one = $self->libxml->parse_string($self->root->serialize(0))->serialize(0);
     my $two = $self->libxml->parse_string($self2->root->serialize(0))->serialize(0);
 
