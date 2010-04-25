@@ -19,7 +19,7 @@ requires "HTML::Entities";
 requires "CSS::Tiny";
 requires "HTML::Selector::XPath" => "0.04";
 requires "HTML::TokeParser::Simple";
-# requires "LWP::Simple";
+recommends "LWP::UserAgent";
 
 test_requires "Test::More" => 0.5;
 test_requires "YAML";

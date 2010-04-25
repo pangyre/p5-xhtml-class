@@ -5,6 +5,17 @@ use namespace::autoclean;
 use Carp;
 # requires qw(  );
 
+sub title {
+    my $self = shift;
+    my $new_title = shift;
+    my $title = [ $self->findnodes("//head/title") ]->[0]->firstChild;
+    if ( defined $new_title )
+    {
+        $title->setData( $new_title );
+    }
+    $title->data;
+}
+
 sub strip_tags {
     my $self = shift;
     my $xpath = $self->selector_to_xpath(+shift);
