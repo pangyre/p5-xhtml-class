@@ -7,7 +7,6 @@ use File::Spec;
 use Path::Class;
 use lib File::Spec->catfile($FindBin::Bin, '../lib');
 use XHTML::Class;
-use Encode;
 use utf8;
 
 # What happens with an empty string document?
@@ -19,7 +18,7 @@ use utf8;
 ¶aragraph †wo…
 BEFORE
 
-    my $after = encode("UTF8", <<"AFTER");
+    my $after = <<"AFTER";
 <p>¶aragraph øne¡</p>
 
 <p>¶aragraph †wo…</p>
@@ -37,23 +36,18 @@ AFTER
 #    diag($before);
 #    diag(chr(8230));
 
-# XHTML::Class::_trim
-
     is(XHTML::Class::_trim($xc->as_string),
        XHTML::Class::_trim($before),
        "Original content matches stringified object");
 
-exit;
-
     ok( my $enparaed = $xc->enpara(),
         "Enpara'ing the content" );
 
-    diag( XHTML::Class::_trim($xc->as_string) ) if $ENV{TEST_VERBOSE};
+    # note( XHTML::Class::_trim($xc->as_string) );
 
     is(XHTML::Class::_trim($xc->as_string),
        XHTML::Class::_trim($after),
        "Basic test of enpara OK");
-
 }
 
 done_testing();
