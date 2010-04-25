@@ -1,11 +1,6 @@
-use strict;
 use warnings;
-use Test::More "no_plan";
-use Test::Exception;
-use FindBin;
-use File::Spec;
-use Path::Class;
-use lib File::Spec->catfile($FindBin::Bin, '../lib');
+use strict;
+use Test::More;
 use XHTML::Class;
 use YAML;
 
@@ -15,7 +10,7 @@ while ( <DATA> )
 {
     my ( $input, $expected ) = _trim(split /::/);
 
-    my $xc = XHTML::Class->new(\$input);
+    my $xc = XHTML::Class->new($input);
 
     is( _trim($xc->as_string), _trim($expected),
         _substr($expected)
@@ -52,14 +47,13 @@ OH HAI!
 
 OH<br>HAI!
 ::
-OH<br/>HAI!
+OH<br />HAI!
 
 ::TEST::DATA::
 
 <p>OH HAI!
 ::
-<p>OH HAI!
-</p>
+<p>OH HAI!</p>
 
 ::TEST::DATA::
 

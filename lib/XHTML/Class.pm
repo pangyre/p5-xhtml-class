@@ -16,6 +16,8 @@ our $AUTHORITY = 'cpan:ASHLEY';
 
 use Encode;
 use Carp qw( carp croak );
+use HTML::Entities;
+use HTML::TokeParser::Simple;
 use XML::LibXML;
 use XML::Catalogs::HTML -libxml;
 use HTML::Selector::XPath ();
@@ -135,15 +137,15 @@ sub _make_sane_doc {
         $self->_type("document");
         return $self->parse_html_string($raw);
     }
-    elsif ( $raw =~ /\A(?:<\W[^>]+>|\s+)*<html(?:\s|>)/i )
+
+    if ( $raw =~ /\A(?:<\W[^>]+>|\s+)*<html(?:\s|>)/i )
     {
         $self->_type("document");
-        return $self->parse_html_string($raw);
     }
     else
     {
         $self->_type("fragment");
-        return $self->parse_html_string(<<"_EOHTML");
+        $raw = <<"_EOHTML";
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html><head><title>Untitled $TITLE_ATTR Document</title></head><body>
@@ -151,8 +153,15 @@ sub _make_sane_doc {
 </body></html>
 _EOHTML
     }
-#
-#    return $doc;
+
+    my $recover = $self->libxml->recover;
+    $self->libxml->recover(0);
+    my $well_formed = eval { $self->parse_html_string($raw) };
+    $self->libxml->recover($recover);
+
+    return $well_formed if $well_formed;
+
+    $self->parse_html_string($self->_sanitize($raw));
 }
 
 sub is_fragment { +shift->type eq 'fragment' }
@@ -208,6 +217,50 @@ sub as_text {
 sub _trim {
     s/\A\s+|\s+\z//g for @_;
     wantarray ? @_ : $_[0];
+}
+
+sub _sanitize {
+    my $self = shift;
+    my $fragment = shift or return;
+    my $p = HTML::TokeParser::Simple->new(\$fragment);
+    my $renew = "";
+    my $in_body = 0;
+  TOKEN:
+    while ( my $token = $p->get_token )
+    {
+        #warn sprintf("%10s %10s %s\n",  $token->[-1], $token->get_tag, blessed($token));
+        #no warnings "uninitialized";
+        if ( $self->known($token->get_tag) )
+        {
+            if ( $token->is_start_tag )
+            {
+                my @pair;
+                for my $attr ( @{ $token->get_attrseq } )
+                {
+                    next if $attr eq "/";
+                    my $value = encode_entities(decode_entities($token->get_attr($attr)));
+                    push @pair, join("=",
+                                     $attr,
+                                     qq{"$value"});
+                }
+                $renew .= "<" . join(" ", $token->get_tag, @pair);
+                $renew .= ( $token->get_attr("/") || $self->empty($token->get_tag) ) ? "/>" : ">";
+            }
+            else
+            {
+                $renew .= $token->as_is;
+            }
+        }
+        elsif ( $token->is_declaration or $token->is_pi )
+        {
+            $renew .= $token->as_is;
+        }
+        else
+        {
+            $renew .= encode_entities(decode_entities($token->as_is),'<>"&');
+        }
+    }
+    return $renew;
 }
 
 # rename css_to_xpath?

@@ -1,6 +1,6 @@
 package XHTML::Class::Role::Info;
 use Moose::Role;
-# no warnings "uninitialized";
+no warnings "uninitialized";
 use namespace::autoclean;
 use Carp;
 
@@ -23,7 +23,11 @@ sub tags {
 }
 
 sub known {
-    defined $_known->{$_[1]};
+    exists $_known->{$_[1]};
+}
+
+sub empty {
+    $_empty->{$_[1]};
 }
 
 sub block_level {
