@@ -1,4 +1,4 @@
-<p>Not in<br/>
+<p>Not in<br />
 the first abutting.</p>
 <p>Did it manually here.</p>
 <p>¡Déjà vu!</p>
@@ -10,22 +10,22 @@ This is the fourth block and has
 
 “triple spacing in it and an &amp;”
 </pre>
-<p>Didn’t do it here<br/>
-in<br/>
+<p>Didn’t do it here<br />
+in<br />
 the fifth.</p>
 <p>Did it here in
 the sixth mashed up against the fifth so we
-could not possibly split on whitespace.</p><hr/><div class="enpara">
+could not possibly split on whitespace.</p><hr /><div class="enpara">
 <p>Have a <b>bold</b> here that needs a paragraph.</p>
 <p>real para back into the mix</p><div><div><div><table><tr><td><div><ul><li><blockquote>
 <p>quote one</p>
 
-<p>quote two<br/>
+<p>quote two<br />
 quote two.five</p>
-</blockquote></li></ul><ol><li><p>Surprise!</p>
-<p>  Naked!!!<br/>
+</blockquote><ol><li><p>Surprise!</p>
+<p>  Naked!!!<br />
     </p>
-</li></ol></div></td></tr></table></div></div></div></div>
+</li></ol></li></ul></div></td></tr></table></div></div></div></div>
 <p>
   <b>PangyreSoft</b>
 </p>

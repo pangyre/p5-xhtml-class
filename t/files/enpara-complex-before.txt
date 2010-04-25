@@ -30,7 +30,7 @@ Have a <b>bold</b> here that needs a paragraph.
 <div><ul><li><blockquote>quote one
 
 quote two
-quote two.five</blockquote></li>
+quote two.five</blockquote>
 <ol><li>
   <p>Surprise!</p>
   Naked!!!
