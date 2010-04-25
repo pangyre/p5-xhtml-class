@@ -11,7 +11,7 @@ use XHTML::Class::Types;
 use overload q{""} => sub { +shift->as_string }, fallback => 1;
 no warnings "uninitialized";
 
-our $VERSION = "0.90_01";
+our $VERSION = "0.01";
 our $AUTHORITY = 'cpan:ASHLEY';
 
 use Encode;
@@ -290,58 +290,57 @@ Definitions:
 
 =head1 NAME
 
-XHTML::Util - (alpha software) powerful utilities for common but difficult to nail HTML munging.
-
-=head2 VERSION
-
-0.99_08
+XHTML::Class - (alpha software) powerful utilities for common but difficult to nail HTML munging.
 
 =head1 SYNOPSIS
 
- use strict;
  use warnings;
- use XHTML::Util;
- my $xu = XHTML::Util
-    ->new(\"This is naked\n\ntext for making into paragraphs.");
- print $xu->enpara, $/;
+ use strict;
+ use XHTML::Class;
+ my $xc = XHTML::Class
+    ->new("This is naked\n\ntext for making into paragraphs.");
+ print $xc->enpara, $/;
  
  # <p>This is naked</p>
  #
  # <p>text for making into paragraphs.</p>
 
- $xu = XHTML::Util
-     ->new(\"<blockquote>Quotes should probably have paras.</blockquote>");
- print $xu->enpara("blockquote");
+ use XHTML::Class;
+ $xc = xc(q{
+    <blockquote>Quotes should probably have paras.</blockquote>
+ });
+ $xc->enpara("blockquote");
+ print $xc->as_xhtml, $/;
  
  # <blockquote>
  #   <p>Quotes should probably have paras.</p>
  # </blockquote>
 
- $xu = XHTML::Util
-     ->new(\'<i><a href="#"><b>Something</b></a>.</i>');
+ $xc = XHTML::Class
+     ->new('<i><a href="#"><b>Something</b></a>.</i>');
  
- print $xu->strip_tags('a');
+ print $xc->strip_tags('a');
  # <i><b>Something</b>.</i>
 
 =head1 DESCRIPTION
 
 You can use CSS expressions to most of the methods. E.g., to only enpara the contents of div tags with a class of "enpara" -- C<< E<lt>div class="enpara"/E<gt> >> -- you could do this-
 
- print $xu->enpara("div.enpara");
+ print $xc->enpara("div.enpara");
 
 To do the contents of all blockquotes and divs-
 
- print $xu->enpara("div, blockquote");
+ print $xc->enpara("div, blockquote");
 
 Alterations to the XHTML in the object are persistent.
 
- my $xu = XHTML::Util
-     ->new(\'<script>alert("OH HAI")</script>');
- $xu->strip_tags('script');
+ my $xc = XHTML::Class
+     ->new('<script>alert("OH HAI")</script>');
+ $xc->strip_tags('script');
 
 Will remove the script tagsE<mdash>not the script content thoughE<mdash>so the next time you call anything that returns the stringified object the changes will remainE<ndash>
 
- print $xu->as_string, $/;
+ print $xc->as_string, $/;
  # alert("OH HAI")
 
 Well... really you'll get C<< E<lt>![CDATA[alert(&quot;OH HAI&quot;)]]E<gt> >>.
@@ -350,7 +349,7 @@ Well... really you'll get C<< E<lt>![CDATA[alert(&quot;OH HAI&quot;)]]E<gt> >>.
 
 =head2 new
 
-Creates a new C<XHTML::Util> object.
+Creates a new C<XHTML::Class> object.
 
 =head2 strip_tags
 
@@ -367,7 +366,7 @@ That isn't legal so there's no definition for what browsers should do with it. S
 What you can do is something like thisE<ndash>
 
  my $post_title = "I <3 <a href="http://icanhascheezburger.com/">kittehs</a>";
- my $safe_title = $xu->strip_tags($post_title, ["a"]);
+ my $safe_title = $xc->strip_tags($post_title, ["a"]);
  # Menu link should only go to the single post page.
  my $menu_view_title = some_link_maker($safe_title);
  # No need to link back to the page you're viewing already.
@@ -378,17 +377,17 @@ What you can do is something like thisE<ndash>
 Takes a CSS selector string. Completely removes the matched nodes, including their content. This differs from L</strip_tags> which retains the child nodes intact and only removes the tags proper.
 
  # Remove <center/> tags and external images.
- my $cleaned = $xu->remove("center, img[src^='http']");
+ my $cleaned = $xc->remove("center, img[src^='http']");
 
 =head2 traverse
 
 Walks the given nodes and executes the given callback. Can be called with a selector or without. If called with a selector, the callback sub receives the selected nodes as its arguments.
 
- $xu->traverse("div.fancy", sub { my $div_node = shift });
+ $xc->traverse("div.fancy", sub { my $div_node = shift });
 
 Without a selector it receives the document root.
 
- $xu->traverse(sub { my $root = shift });
+ $xc->traverse(sub { my $root = shift });
 
 =head2 translate_tags
 
@@ -398,7 +397,7 @@ Without a selector it receives the document root.
 
 [Not implemented.] Removes styles from matched nodes. To remove all style from a fragment-
 
- $xu->remove_style("*");
+ $xc->remove_style("*");
 
 (Should also remove style sheets, yes?)
 
@@ -443,7 +442,7 @@ To add paragraph markup to naked text. There are many, many implementations of t
  not be touched!
  </pre>I meant to do that.
 
-With C<< XHTML::Util-E<gt>enpara >> you will get-
+With C<< XHTML::Class-E<gt>enpara >> you will get-
 
  <p>Is this a paragraph<br/>
  or two?</p>
@@ -513,9 +512,9 @@ Returns true if the originally parsed item was a fragment.
 
 =head2 same_same
 
-Takes another XHTML::Util object or the valid argument to create one. Attempts to determine if the resulting object is the same as the calling object. E.g.,
+Takes another XHTML::Class object or the valid argument to create one. Attempts to determine if the resulting object is the same as the calling object. E.g.,
 
- print $xu->same_same(\"<p>OH HAI</p>") ?
+ print $xc->same_same("<p>OH HAI</p>") ?
      "Yepper!\n" : "Noes...\n";
 
 =head2 tags
@@ -526,12 +525,10 @@ Returns a list of all known HTML tags. Please ignore method. I'm not sure it's a
 
 This wraps L<selector_to_xpath HTML::Selector::Xpath/selector_to_xpath>. Not really meant to be used but exposed in case you want it.
 
- print $xu->selector_to_xpath("form[name='register'] input[type='password']");
+ print $xc->selector_to_xpath("form[name='register'] input[type='password']");
  # //form[@name='register']//input[@type='password']
 
 =head1 TO DO
-
-I think the default doc should be \"". There is no reason to jump through that hoop if wanting to build up something from scratch.
 
 Finish spec and tests. Get it running solid enough to remove alpha label. Generalize the argument handling. Provide optional setting or methods for returning nodes instead of serialized content. Improve document/head related handling/options.
 

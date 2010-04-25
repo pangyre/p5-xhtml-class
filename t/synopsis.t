@@ -1,33 +1,30 @@
 use strict;
-
 use FindBin;
 use File::Spec;
 use lib File::Spec->catfile($FindBin::Bin, 'lib');
 
 use Test::More tests => 2;
 
-#------------------------------------------------------------------
-open F, '<', "$FindBin::Bin/../lib/XHTML/Util.pm"
-    or die "Couldn't open self module to read!";
+open my $fh, '<', "$FindBin::Bin/../lib/XHTML/Class.pm"
+    or die "Couldn't open self module to read! $!";
 
 my $synopsis = '';
-while ( <F> ) {
+while ( <$fh> ) {
     if ( /=head1 SYNOPSIS/i .. /=head\d (?!S)/
                    and not /^=/ )
     {
         $synopsis .= $_;
     }
 }
-close F;
+close $fh;
 
 ok( $synopsis,
     "Got code out of the SYNOPSIS space to evaluate" );
 
-diag( $synopsis ) if $ENV{TEST_VERBOSE};
-
+note( $synopsis );
 
 my $ok = eval "$synopsis; print qq{\n}; 1;";
 
-ok( $ok,  "Synopsis eval'd" );
+ok( $ok, "Synopsis eval'd" );
 
-diag( $@ . "\n" . $synopsis ) if $@ and $ENV{TEST_VERBOSE};
+note( $@ . "\n" . $synopsis ) if $@;
