@@ -4,7 +4,7 @@ use Moose::Role;
 use namespace::autoclean;
 
 sub fix {
-    my ( $self, $selector ) = shift;
+    my $self = shift;
 }
 
 1;

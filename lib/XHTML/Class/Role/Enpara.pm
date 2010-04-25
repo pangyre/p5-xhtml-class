@@ -7,7 +7,7 @@ requires qw( known block_level );
 
 sub enpara {
     my $self = shift;
-    my $xpath = $self->_make_selector(+shift);
+    my $xpath = $self->selector_to_xpath(+shift || "*");
     my $root = $self->root;
     my $doc = $self->doc;
 

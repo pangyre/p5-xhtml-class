@@ -6,7 +6,7 @@ with qw( XHTML::Class::Role::Core
 
 use namespace::clean;
 use Moose::Exporter;
-Moose::Exporter->setup_import_methods( as_is => [qw( xc selector_to_xpath )] );
+Moose::Exporter->setup_import_methods( as_is => [qw( xc )] );
 use XHTML::Class::Types;
 use overload q{""} => sub { +shift->as_string }, fallback => 1;
 no warnings "uninitialized";
@@ -14,12 +14,13 @@ no warnings "uninitialized";
 our $VERSION = "0.90_01";
 our $AUTHORITY = 'cpan:ASHLEY';
 
+use Encode;
 use Carp qw( carp croak );
 use XML::LibXML;
-use HTML::Selector::XPath qw(selector_to_xpath);
+use HTML::Selector::XPath ();
 our $TITLE_ATTR = join("/", __PACKAGE__, $VERSION);
 our $FRAGMENT_SELECTOR = "div[title='$TITLE_ATTR']";
-our $FRAGMENT_XPATH = selector_to_xpath($FRAGMENT_SELECTOR);
+our $FRAGMENT_XPATH = HTML::Selector::XPath::selector_to_xpath($FRAGMENT_SELECTOR);
 
 sub xc { __PACKAGE__->new(@_) }
 
@@ -82,6 +83,7 @@ has "doc" =>
         as_xhtml => "serialize_html",
         is_valid => "is_valid",
         validate => "validate",
+        new_fragment => "createDocumentFragment",
     }
     ;
 
@@ -155,20 +157,28 @@ sub is_document { +shift->type eq 'document' }
 sub as_fragment { # force_fragment...? set?
     my $self = shift;
     my ( $fragment ) = $self->findnodes($FRAGMENT_XPATH);
-    $fragment ||= $self->body;
+    $fragment ||= [ $self->findnodes("//body") ]->[0]; #$self->body;
+    #$fragment ||= $self->body;
+    $fragment or croak "No fragment in ", $self->as_xhtml;
     my $out = "";
     $out .= $_->serialize(1,"UTF-8") for $fragment->childNodes; # 321 encoding
     _trim($out);
 }
 
-has "body" =>
+has "bodySADF" =>
     is => "ro",
     isa => "XML::LibXML::Element",
     lazy => 1,
     required => 1,
-    default => sub { 
-        [ +shift->doc->findnodes("//body") ]->[0];
+    default => sub {
+        my $self = shift;
+        [ $self->findnodes("//body") ]->[0] || croak "No <body/> in $self";
     };
+
+sub body {
+    my $self = shift;
+    [ $self->doc->findnodes("//body") ]->[0] || croak "No <body/> in $self";
+}
 
 has "head" =>
     is => "ro",
@@ -181,7 +191,8 @@ has "head" =>
 
 sub as_string {
     my $self = shift;
-    $self->is_fragment ? $self->as_fragment : $self->as_xhtml;
+    decode($self->encoding,
+           $self->is_fragment ? $self->as_fragment : $self->as_xhtml);
 }
 
 sub as_text {
@@ -196,15 +207,17 @@ sub _trim {
 }
 
 # rename css_to_xpath?
-sub _make_selector {
+sub selector_to_xpath {
     my $self = shift;
     my $selector = shift;
+    return $selector if $selector =~ m,\A/,; # Already definitely xpath.
     unless ( $selector )
     {
         my $base = $self->is_fragment ? $FRAGMENT_SELECTOR : "body";
-        $selector = "$base, $base *";
+        $selector = "$base *";
+        #$selector = "$base, $base *";
     }
-    selector_to_xpath($selector);
+    HTML::Selector::XPath::selector_to_xpath($selector);
 }
 
 1;
