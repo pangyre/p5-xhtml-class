@@ -320,11 +320,70 @@ XHTML::Class - (alpha software) XHTML with munging, validation, tranformations, 
  print xc("<p><Q&A>");
  # <p>&lt;Q&amp;A&gt;</p>
 
+=head1 Description
+
+You create an L<XHTML::Class> object with the method L</new> or the convenience function L</xc>. The typical, simple way, to use it is with a single argument.
+
+ $xhtml = XHTML::Class->new($something);
+ # or
+ $xhtml = xc($something); # Returns the same thing.
+
+The C<$something> comes through a coercion map so there is a large variety of things that you can pass to L</new>. Acceptable arguments includeE<ndash>
+
+=over 4
+
+=item * Plain text string.
+
+=item * Stringified HTML doc.
+
+=item * L<Path::Class::File> object or any object that can C<slurp>.
+
+=item * L<HTML::TreeBuilder> object or any object that can C<as_HTML>.
+
+=item * L<IO::File> or any object that can C<getlines>.
+
+=item * An L<XML::LibXML::Document> or L<XML::LibXML::Element> or any object that can serialize to a string.
+
+=item * Any object that can C<as_text> or C<as_string>.
+
+=item * A L<URI> object: this will make an L<LWP::Simple> C<get> request.
+
+=back
+
+You can use CSS expressions to most of the methods. E.g., to only enpara the contents of div tags with a class of "enpara" -- C<< E<lt>div class="enpara"/E<gt> >> -- you could do this-
+
+ print $xc->enpara("div.enpara");
+
+To do the contents of all blockquotes and divs-
+
+ print $xc->enpara("div, blockquote");
+
+Alterations to the XHTML in the object are persistent.
+
+ my $xc = XHTML::Class
+     ->new('<script>alert("OH HAI")</script>');
+ $xc->strip_tags('script');
+
+Will remove the script tagsE<mdash>not the script content thoughE<mdash>so the next time you call anything that returns the stringified object the changes will remainE<ndash>
+
+ print $xc->as_string, $/;
+ # alert("OH HAI")
+
+Well... really you'll get C<< E<lt>![CDATA[alert(&quot;OH HAI&quot;)]]E<gt> >>.
+
 =head1 Methods
 
 =over 4
 
-=item *
+=item * new
+
+In addition to the single argument construction, you can provide a hash ref (or hash style list) of further settingsE<ndash>
+
+ xc($string);
+ xc({ source => $string }); # Same thing.
+
+ XHTML::Class->new($path_class);
+ XHTML::Class->new(source => $path_class); # Same thing.
 
 =back
 

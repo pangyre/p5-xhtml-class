@@ -19,8 +19,10 @@ coerce  "XC::Source"
             $_->can("serialize") ?
                 $_->serialize : $_->can("slurp") ?
                 scalar($_->slurp) : $_->can("as_string") ?
-                $_->as_string : $_->can("as_text") ?
-                $_->as_text : $_->can("getlines") ?
+                $_->as_string : $_->can("as_HTML") ?
+                $_->as_HTML : $_->can("as_text") ?
+                $_->as_text : $_->can("as_string") ?
+                $_->as_string : $_->can("getlines") ?
                 scalar($_->getlines) : confess("Couldn't figure out what to do with $_");
         }
     ;
