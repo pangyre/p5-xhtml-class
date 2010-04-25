@@ -2,7 +2,7 @@
 
 <p>Two.</p>
 
-<p>Three.<br/>
+<p>Three.<br />
 Three point five.</p>
 
 <p>Four.</p>

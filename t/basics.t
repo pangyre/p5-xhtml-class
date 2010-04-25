@@ -19,29 +19,30 @@ dies_ok( sub { my $xc = XHTML::Class->new },
 }
 
 {
-    my $before = Path::Class::File->new("$FindBin::Bin/files/basics-before.txt");
-    my $after = Path::Class::File->new("$FindBin::Bin/files/basics-after.txt");
-    cmp_ok( $before->slurp, "ne", $after->slurp,
+    my $before = Path::Class::File->new("$FindBin::Bin/files/basics-before.txt")->slurp;
+    my $after = Path::Class::File->new("$FindBin::Bin/files/basics-after.txt")->slurp;
+    cmp_ok( $before, "ne", $after,
             "Sanity check: before and after differ");
 
     ok( my $xc = XHTML::Class->new($before),
-        "XHTML::Class->new from Path::Class::File->files/basics-before.txt" );
+        "XHTML::Class->new(\$before)" );
 
-    ok( $xc->is_fragment,
-        "Type is fragment" );
+    ok( $xc->is_fragment, "Type is fragment" );
 
-    $xc->debug(3);
+#    $xc->debug(3);
 
-    isa_ok( $xc, "XHTML::Class" );
-
-    is(XHTML::Class::_trim($xc->as_string), XHTML::Class::_trim(scalar $before->slurp),
+    is(XHTML::Class::_trim($xc->as_string), XHTML::Class::_trim($before),
        "Original content matches stringified object");
 
-    ok( my $enparaed = $xc->enpara(),
+    ok( $xc->enpara(),
         "Enpara'ing the content" );
 
-    is( $enparaed, $after->slurp,
-        "Enpara'ed content of 'before' matches 'after'" );
+#    is(XHTML::Class::_trim($xc->as_string),
+#       XHTML::Class::_trim($before) 
+
+    is( XHTML::Class::_trim($xc),
+        XHTML::Class::_trim($after),
+        "Enpara'ed content of 'before' matches raw 'after'" );
 }
 
 {
