@@ -350,7 +350,22 @@ The C<$something> comes through a coercion map so there is a large variety of th
 
 =back
 
-You can use CSS expressions to most of the methods. E.g., to only enpara the contents of div tags with a class of "enpara" -- C<< E<lt>div class="enpara"/E<gt> >> -- you could do this-
+L<XHTML::Class> methods are chainable. They return their object. They are overloaded to stringify.
+
+ print xc('<a href="/">Something <del>here</del> <ins>there</ins></a>')
+          ->remove("del")
+          ->strip_tags("ins")
+          ->enpara;
+
+Will printE<ndash>
+
+ <p>
+   <a href="/">Something  there</a>
+ </p>
+
+The stringification is DWIM-depdendent on the object's source. An object created from an entire HTML document will stringify to an entire XHTML document. An object created from plain text or an HTML fragment will stringify to same.
+
+You can use CSS and XPath expressions to most of the methods. E.g., to only enpara the contents of div tags with a class of "enpara" -- C<< E<lt>div class="enpara"/E<gt> >> -- you could do this-
 
  print $xc->enpara("div.enpara");
 
@@ -360,8 +375,7 @@ To do the contents of all blockquotes and divs-
 
 Alterations to the XHTML in the object are persistent.
 
- my $xc = XHTML::Class
-     ->new('<script>alert("OH HAI")</script>');
+ my $xc = XHTML::Class->new('<script>alert("OH HAI")</script>');
  $xc->strip_tags('script');
 
 Will remove the script tagsE<mdash>not the script content thoughE<mdash>so the next time you call anything that returns the stringified object the changes will remainE<ndash>
@@ -369,7 +383,7 @@ Will remove the script tagsE<mdash>not the script content thoughE<mdash>so the n
  print $xc->as_string, $/;
  # alert("OH HAI")
 
-Well... really you'll get C<< E<lt>![CDATA[alert(&quot;OH HAI&quot;)]]E<gt> >>.
+Well... really you'll get C<< E<lt>![CDATA[alert("OH HAI")]]E<gt> >>.
 
 =head1 Methods
 
@@ -385,6 +399,126 @@ In addition to the single argument construction, you can provide a hash ref (or 
  XHTML::Class->new($path_class);
  XHTML::Class->new(source => $path_class); # Same thing.
 
+=item * remove
+
+Completely removes the matched nodes, including their content. This differs from L</strip_tags> which retains the child nodes intact and only removes the tags proper.
+
+ # Remove <center/> tags and external images.
+ $xc->remove("center, img[src^='http']");
+
+=item * strip_tags
+
+Why you might need this-
+
+ my $post_title = "I <3 <a href="http://icanhascheezburger.com/">kittehs</a>";
+ my $blog_link = some_link_maker($post_title);
+ print $blog_link;
+
+ <a href="/oh-noes">I <3 <a href="http://icanhascheezburger.com/">kittehs</a></a>
+
+That isn't legal so there's no definition for what browsers should do with it. Some sort of tolerate it, some don't. It's never going to be a good user experience.
+
+What you can do is something like thisE<ndash>
+
+ my $post_title = xc("I <3 <a href="http://icanhascheezburger.com/">kittehs</a>");
+ my $safe_title = $xc->strip_tags("a");
+ # Menu link should only go to the single post page.
+ my $menu_view_title = some_link_maker($safe_title);
+ # No need to link back to the page you're viewing already.
+ my $single_view_title = $post_title;
+
+=item * traverse
+
+[Not currently implemented.]
+
+Walks the given nodes and executes the given callback. Can be called with a selector or without. If called with a selector, the callback sub receives the selected nodes as its arguments.
+
+ $xc->traverse("div.fancy",
+               sub {
+                   my $fancy_div_node = shift;
+                   my $xc = shift;
+               });
+
+Without a selector it receives the document root.
+
+ $xc->traverse(sub { my $root = shift });
+
+=item * fix
+
+[Not currently implemented.] Attempts to convert broken HTML to XHTML with some best guesses on missing attributes and such.
+
+=item * translate_tags
+
+[Not implemented.] Translates one tag to another.
+
+=item * remove_style
+
+[Not implemented.] Removes styles from matched nodes. To remove all style from a fragment-
+
+ $xc->remove_style("*");
+
+(Should also remove style sheets, yes?)
+
+=item * inline_stylesheets
+
+[Not implemented.] Moves all linked stylesheet information into inline style attributes. This is useful, for example, when distributing a document fragment like an RSS/Atom feed and having it match its online appearance.
+
+=item * fix
+
+[Partially implemented.] Attempts to make many known problems go away. E.g., entity escaping, missing alt attributes of images, etc.
+
+=item * validate
+
+[Semi-implemented.]
+
+Validates a given document or fragment (which is actually contained in a full document) against a DTD provided by name or, if none is provided, it will validate against F<xhtml1-transitional>. Uses L<XML::LibXML>'s validate under the covers.
+
+=item * is_valid
+
+[Semi-implemented.]
+
+A non-fatal version of L</validate>. Returns true on success, false on failure.
+
+=item * enpara
+
+To add paragraph markup to naked and phrase level text. There are many, many implementations of this basic idea out there as well as many like Markdown which do much more. While some are decent, none is really meant to sling arbitrary HTML and get DWIM behavior from places where it's left out; every implementation I've seen either has rigid syntax or has beaucoup failure prone edge cases. Consider these-
+
+ Is this a paragraph
+ or two?
+
+ <p>I can do HTML when I'm paying attention.</p>
+ <p style="color:#a00">Or I need to for some reason.</p>
+ Oh, I stopped paying attention... What happens here? Or <i>here</i>?
+
+ I'd like to see this in a paragraph so it's legal markup.
+ <pre>
+ now
+ this
+ should
+
+
+ not be touched!
+ </pre>I meant to do that.
+
+With C<< XHTML::Class-E<gt>enpara >> you will get-
+
+ <p>Is this a paragraph<br/>
+ or two?</p>
+
+ <p>I can do HTML when I'm paying attention.</p>
+ <p style="color:#a00">Or I need to for some reason.</p>
+ <p>Oh, I stopped paying attention... What happens here? Or <i>here</i>?</p>
+
+ <p>I'd like to see this in a paragraph so it's legal markup.</p>
+ <pre>
+ now
+ this
+ should
+ 
+ 
+ not be touched!
+ </pre>
+ <p>I meant to do that.</p>
 =back
 
 =head1 Code Repository
@@ -393,6 +527,7 @@ L<http://github.com/pangyre/p5-xhtml-class>.
 
 =head1 See Also
 
+L<XML::LibXML>, L<HTML::TokeParser>, 
 
 =head1 Author
 
@@ -426,3 +561,7 @@ such holder or other party has been advised of the possibility of
 such damages.
 
 =cut
+
+item * sanitize
+
+[Not implemented.] Upgrades old or broken HTML to valid XHTML with various best-guess/default heuristics.
