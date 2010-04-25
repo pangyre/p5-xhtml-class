@@ -39,12 +39,7 @@ sub _enpara_this_nodes_content {
     my @naked_block;
     for my $node ( $parent->childNodes )
     {
-        if ( $self->block_level($node->nodeName)
-             or
-             $node->nodeName eq "a" # special case block level, so IGNORE
-             and
-             grep { $_->nodeName eq "img" } $node->childNodes
-             )
+        if ( $self->block_level($node->nodeName) )
         {
             next unless @naked_block; # nothing to enblock
             my $p = $doc->createElement("p");
