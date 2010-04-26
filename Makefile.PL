@@ -22,10 +22,9 @@ requires "HTML::TokeParser::Simple";
 recommends "LWP::UserAgent";
 
 test_requires "Test::More" => 0.5;
-test_requires "YAML";
 test_requires "Test::Exception" => 0.2;
 test_requires "File::Spec" => 3;
-test_requires "Algorithm::Diff";
+test_requires "HTTP::Daemon";
 
 if ( $Module::Install::AUTHOR )
 {

@@ -33,6 +33,14 @@ sub strip_tags {
     $self;
 }
 
+sub strip_style {
+    my $self = shift;
+    # <links /> too?
+    my $xpath = $self->selector_to_xpath(+shift);
+    $_->removeAttribute("style") for $self->findnodes($xpath);
+    $self;
+}
+
 sub remove {
     my $self = shift;
     my $xpath = $self->selector_to_xpath(+shift);

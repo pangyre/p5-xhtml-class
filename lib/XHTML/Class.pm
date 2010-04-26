@@ -399,12 +399,20 @@ In addition to the single argument construction, you can provide a hash ref (or 
  XHTML::Class->new($path_class);
  XHTML::Class->new(source => $path_class); # Same thing.
 
+=item * title
+
+The document title.
+
 =item * remove
 
 Completely removes the matched nodes, including their content. This differs from L</strip_tags> which retains the child nodes intact and only removes the tags proper.
 
  # Remove <center/> tags and external images.
  $xc->remove("center, img[src^='http']");
+
+=item * strip_style
+
+Removes tags for matching nodes.
 
 =item * strip_tags
 
@@ -519,6 +527,17 @@ With C<< XHTML::Class-E<gt>enpara >> you will get-
  not be touched!
  </pre>
  <p>I meant to do that.</p>
+
+=back
+
+=head1 To do
+
+=over 4
+
+=item * DTD control and switching: upgrading, downgrading.
+
+=item * Namespace handling.
+
 =back
 
 =head1 Code Repository
