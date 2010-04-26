@@ -11,7 +11,7 @@ BEFORE
     ok( my $xc = XHTML::Class->new({ source => $before }),
         "XHTML::Class->new(...)" );
 
-    isa_ok( $xc->strip_styles, "XHTML::Class",
+    isa_ok( $xc->strip_style, "XHTML::Class",
             "strip_styles returns object" );
 
     unlike($xc, qr/\sstyle="/, "Styles are gone");
